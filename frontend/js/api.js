@@ -3,12 +3,8 @@
     Version 5.2 PRO (2026)
 ============================================================ */
 
-/* ------------------------------------------------------------
-    BACKEND URL (YOUR APPS SCRIPT DEPLOYMENT URL)
------------------------------------------------------------- */
-// ⚠️ IMPORTANT — ضع رابط Web App الفعلي هنا
+// ضع رابط Web App هنا
 const API_URL = "https://script.google.com/macros/s/AKfycbyAIMKdc6ELTxsEOyJLkuEycRAFAyCNI3hUwmlRTxAfm5Tr-hyWLKrbQJ-EIXKRguP8oA/exec";
-
 
 /* ------------------------------------------------------------
     GENERAL FETCH WRAPPER
@@ -22,21 +18,23 @@ async function apiRequest(body = {}) {
             body._s = authState.sig;
         }
 
-const res = await fetch(API_URL, {
-    method: "POST",
-    headers: { "Content-Type": "application/json" },
-    body: JSON.stringify(body)
-});
+        const res = await fetch(API_URL, {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify(body)
+        });
 
-        return await res.json();
+        const data = await res.json();
+        return data;
+
     } catch (err) {
-        console.error("API error:", err);
+        console.error("API ERROR:", err);
         return { success: false, error: "تعذر الاتصال بالخادم" };
     }
 }
 
 /* ------------------------------------------------------------
-    SPECIFIC SHORTCUTS
+    SHORTCUTS
 ------------------------------------------------------------ */
 function apiSearchMember(id) {
     return apiRequest({ action: "search", id });
@@ -66,7 +64,4 @@ function apiGetFullReport(uid) {
     return apiRequest({ action: "get_member_report", MemberUID: uid });
 }
 
-/* ------------------------------------------------------------
-    DEBUG FUNCTION
------------------------------------------------------------- */
 window.api = (payload) => apiRequest(payload);
