@@ -47,12 +47,14 @@ function createResponse(success, payload) {
   if (success) res.data = payload;
   else res.error = payload;
 
-  return ContentService
-    .createTextOutput(JSON.stringify(res))
-    .setMimeType(ContentService.MimeType.JSON)
-    .setHeader("Access-Control-Allow-Origin", "*")
-    .setHeader("Access-Control-Allow-Methods", "GET, POST, OPTIONS")
-    .setHeader("Access-Control-Allow-Headers", "Content-Type");
+  // نرجع JSON بطريقة مضمونة بدون setHeader
+  const template = HtmlService.createHtmlOutput(JSON.stringify(res));
+
+  template.addMetaTag('Access-Control-Allow-Origin', '*');
+  template.addMetaTag('Access-Control-Allow-Headers', 'Content-Type');
+  template.addMetaTag('Access-Control-Allow-Methods', 'POST, GET, OPTIONS');
+
+  return template;
 }
 
 /*******************************************************
