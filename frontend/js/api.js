@@ -4,7 +4,7 @@
 ============================================================ */
 
 // رابط Google Apps Script Web App
-const API_URL = "https://script.google.com/macros/s/AKfycbyAIMKdc6ELTxsEOyJLkuEycRAFAyCNI3hUwmlRTxAfm5Tr-hyWLKrbQJ-EIXKRguP8oA/exec";
+const API_URL = "https://script.google.com/macros/s/AKfycbyls10eMc1qIy6c0esdiNdZpGgrBFMWzff5IOskmYuTBo4krP-Hzt_8fZFdIGFb7zqSmA/exec";
 
 /* ------------------------------------------------------------
     GLOBAL API REQUEST HANDLER
