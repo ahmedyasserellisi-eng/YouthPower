@@ -30,11 +30,20 @@ function loadSession() {
     if (!saved) return;
 
     try {
-        const data = JSON.parse(saved);
-        authState = data;
+        const s = JSON.parse(saved);
 
-        document.getElementById("loginOverlay").classList.add("hidden");
-        showMainUI();
+        // Merge only known fields – بدون overwrite كامل
+        authState.user  = s.user;
+        authState.role  = s.role;
+        authState.token = s.token;
+        authState.sig   = s.sig;
+
+        // إذا كل القيم موجودة → افتح الواجهة
+        if (authState.user && authState.token && authState.sig) {
+            document.getElementById("loginOverlay").classList.add("hidden");
+            showMainUI();
+        }
+
     } catch (e) {
         console.warn("Session load failed:", e);
     }
