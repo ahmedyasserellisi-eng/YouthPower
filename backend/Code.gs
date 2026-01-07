@@ -1,12 +1,6 @@
 /*******************************************************
  *  YouthPower HR Backend - Enterprise V5.2 (2026)
- *  Full Integrated System:
- *  - Members
- *  - MemberLogs
- *  - Logs
- *  - MonthlyEvaluations
- *  - MemberActivities
- *  - ReportsCache
+ *  Fully FIXED for Vercel + CORS + OPTIONS
  *******************************************************/
 
 const SHEET_MEMBERS       = "Members";
@@ -29,209 +23,42 @@ const USERS = {
   "viewer": { pass: "12345", role: "viewer" }
 };
 
-//=====================================================================
-// FIXED CORS + JSON RESPONSE =========================================
-//=====================================================================
-function createResponse(success, payload) {
-  let res = { success, timestamp: new Date().toISOString() };
-  if (success) res.data = payload;
-  else res.error = payload;
+/*******************************************************
+ *  UNIVERSAL CORS HANDLING
+ *******************************************************/
+function doGet(e) { return handleAPI(e); }
+function doPost(e) { return handleAPI(e); }
 
-  const output = ContentService.createTextOutput(JSON.stringify(res));
-  output.setMimeType(ContentService.MimeType.JSON);
-
-  // *******************************
-  // 🔥 CRS HEADERS FIX HERE
-  // *******************************
-  output.setHeader("Access-Control-Allow-Origin", "*");
-  output.setHeader("Access-Control-Allow-Methods", "GET, POST, OPTIONS");
-  output.setHeader("Access-Control-Allow-Headers", "Content-Type");
-
-  return output;
-}
-
-//=====================================================================
-// SIGNATURE
-//=====================================================================
-function generateSignature(data) {
-  const sig = Utilities.computeHmacSha256Signature(data, SECRET_KEY);
-  return sig.map(b => ('0' + (b & 0xFF).toString(16)).slice(-2)).join('');
-}
-
-//=====================================================================
-// UID GENERATOR (Members)
-//=====================================================================
-function generateMemberUIDs() {
-  const sh = SpreadsheetApp.getActive().getSheetByName(SHEET_MEMBERS);
-  const last = sh.getLastRow();
-  if (last < 2) return;
-
-  const data = sh.getRange(2,1,last-1,7).getValues();
-  let updates = 0;
-
-  for (let i=0; i<data.length; i++) {
-    if (!data[i][6]) {
-      data[i][6] = Utilities.getUuid().replace(/-/g,"");
-      updates++;
-    }
-  }
-
-  sh.getRange(2,1,data.length,7).setValues(data);
-}
-
-//=====================================================================
-// AUTO UID ON EDIT
-//=====================================================================
-function onEdit(e) {
-  try {
-    const sh = e.source.getSheetByName(SHEET_MEMBERS);
-    if (!sh) return;
-
-    const row = e.range.getRow();
-    const col = e.range.getColumn();
-
-    if (row > 1 && col >= 1 && col <= 6) {
-      const uidCell = sh.getRange(row, 7);
-      if (!uidCell.getValue()) {
-        uidCell.setValue(Utilities.getUuid().replace(/-/g,""));
-      }
-    }
-
-  } catch(err) {
-    logEvent("SYSTEM","ONEDIT_ERROR","FAILED","","",err.toString());
-  }
-}
-
-//=====================================================================
-// AUTO TRIGGER INSTALL
-//=====================================================================
-function installTrigger() {
-  const triggers = ScriptApp.getProjectTriggers();
-  let exists = triggers.some(t => t.getHandlerFunction() === "onEdit");
-
-  if (!exists) {
-    ScriptApp.newTrigger("onEdit")
-      .forSpreadsheet(SpreadsheetApp.getActive())
-      .onEdit()
-      .create();
-  }
-}
-
-//=====================================================================
-// LOGGING SHEET
-//=====================================================================
-function logEvent(user, action, status, token, sig, msg) {
-  const sh = SpreadsheetApp.getActive().getSheetByName(SHEET_LOGS);
-  sh.appendRow([
-    new Date(),
-    user || "",
-    action || "",
-    status || "",
-    token || "",
-    sig || "",
-    msg || ""
-  ]);
-}
-
-//=====================================================================
-// SECURITY
-//=====================================================================
-function isAuthorized(params) {
-  try {
-    if (!params._u || !params._t || !params._s)
-      return "بيانات التوثيق ناقصة";
-
-    if (!USERS.hasOwnProperty(params._u))
-      return "حساب غير معروف";
-
-    if (params._s !== generateSignature(params._t))
-      return "توقيع غير صحيح";
-
-    const decoded = Utilities.newBlob(Utilities.base64Decode(params._t))
-                   .getDataAsString();
-
-    const timestamp = parseInt(decoded.split(":")[1]);
-
-    if (!timestamp || (Date.now() - timestamp) > SESSION_EXPIRY_MS)
-      return "انتهت الجلسة";
-
-    return "valid";
-
-  } catch (err) {
-    return "خطأ بالتحقق الأمني: " + err;
-  }
-}
-
-//=====================================================================
-// GET SHEET
-//=====================================================================
-function getSheet(name) {
-  return SpreadsheetApp.getActiveSpreadsheet().getSheetByName(name);
+function doOptions(e) {
+  return ContentService
+    .createTextOutput("")
+    .setMimeType(ContentService.MimeType.TEXT)
+    .setHeader("Access-Control-Allow-Origin", "*")
+    .setHeader("Access-Control-Allow-Methods", "GET, POST, OPTIONS")
+    .setHeader("Access-Control-Allow-Headers", "Content-Type");
 }
 
 /*******************************************************
- *    HR ENGINE EXTENSIONS
+ *  FIXED RESPONSE (CORS + JSON)
  *******************************************************/
+function createResponse(success, payload) {
+  let res = { success, timestamp: new Date().toISOString() };
 
-//------------------------------------------------------
-// SAVE MONTHLY EVALUATION
-//------------------------------------------------------
-function saveMonthlyEvaluation(payload) {
-  const sh = getSheet(SHEET_EVAL);
-  if (!sh) return { success:false, error:"ورقة MonthlyEvaluations غير موجودة" };
+  if (success) res.data = payload;
+  else res.error = payload;
 
-  const row = [
-    payload.MemberUID,
-    payload.Date,
-    payload.Month,
-    payload.Year,
-    payload.MeetingMode,
-    payload.MeetingStatus,
-    payload.DelayMinutes,
-    payload.AttendanceScore,
-    payload.ActivityScore,
-    payload.TaskScore,
-    payload.Bonus,
-    payload.Penalty,
-    payload.FinalScore,
-    payload.Notes,
-    JSON.stringify(payload)
-  ];
-
-  sh.appendRow(row);
-  return { success:true };
+  return ContentService
+    .createTextOutput(JSON.stringify(res))
+    .setMimeType(ContentService.MimeType.JSON)
+    .setHeader("Access-Control-Allow-Origin", "*")
+    .setHeader("Access-Control-Allow-Methods", "GET, POST, OPTIONS")
+    .setHeader("Access-Control-Allow-Headers", "Content-Type");
 }
 
-//------------------------------------------------------
-// SAVE ACTIVITY
-//------------------------------------------------------
-function saveActivity(payload) {
-  const sh = getSheet(SHEET_ACT);
-  if (!sh) return { success:false, error:"ورقة MemberActivities غير موجودة" };
-
-  sh.appendRow([
-    payload.MemberUID,
-    payload.Type,
-    payload.Date,
-    payload.Description,
-    payload.Score,
-    JSON.stringify(payload)
-  ]);
-
-  return { success:true };
-}
-
-//=====================================================================
-// doGet
-//=====================================================================
-function doGet(e) {
-  return createResponse(true, "YouthPower HR API V5.2 Engine Running...");
-}
-
-//=====================================================================
-// doPost — MAIN CONTROLLER
-//=====================================================================
-function doPost(e) {
+/*******************************************************
+ *  MAIN API HANDLER  —  ALL LOGIC MOVED HERE
+ *******************************************************/
+function handleAPI(e) {
   const lock = LockService.getScriptLock();
   if (!lock.tryLock(20000))
     return createResponse(false, "الخادم مشغول، حاول بعد لحظات");
@@ -239,7 +66,13 @@ function doPost(e) {
   try {
     installTrigger();
 
-    const params = JSON.parse(e.postData.contents || "{}");
+    let params = {};
+    try {
+      params = JSON.parse(e.postData.contents || "{}");
+    } catch (err) {
+      return createResponse(false, "JSON غير صالح");
+    }
+
     const action = params.action;
 
     const ss = SpreadsheetApp.getActive();
@@ -247,9 +80,9 @@ function doPost(e) {
     const shLogs       = ss.getSheetByName(SHEET_LOGS);
     const shMemberLogs = ss.getSheetByName(SHEET_MEMBER_LOGS);
 
-    //-------------------------------------------------------------
-    // LOGIN
-    //-------------------------------------------------------------
+    /*******************************************************
+     * LOGIN
+     *******************************************************/
     if (action === "login") {
 
       const u = params.username, p = params.password;
@@ -273,22 +106,18 @@ function doPost(e) {
       return createResponse(false, "خطأ في اسم المستخدم أو كلمة المرور.");
     }
 
-    //-------------------------------------------------------------
-    // AUTH CHECK
-    //-------------------------------------------------------------
+    /*******************************************************
+     * AUTH VALIDATION
+     *******************************************************/
     const auth = isAuthorized(params);
     if (auth !== "valid") {
       logEvent(params._u, action, "UNAUTHORIZED", params._t, params._s, auth);
       return createResponse(false, auth);
     }
 
-    /**************************************************************
-     *                    SYSTEM ACTIONS
-     **************************************************************/
-
-    //-------------------------------------------------------------
-    // STATS
-    //-------------------------------------------------------------
+    /*******************************************************
+     * STATS
+     *******************************************************/
     if (action === "stats") {
 
       const members = shMembers.getDataRange().getValues();
@@ -317,9 +146,9 @@ function doPost(e) {
       return createResponse(true, { stats, notifications });
     }
 
-    //-------------------------------------------------------------
-    // SEARCH MEMBER
-    //-------------------------------------------------------------
+    /*******************************************************
+     * SEARCH MEMBER
+     *******************************************************/
     if (action === "search") {
 
       const searchID = String(params.id).trim();
@@ -368,9 +197,9 @@ function doPost(e) {
       return createResponse(true, member);
     }
 
-    //-------------------------------------------------------------
-    // ADD LOG
-    //-------------------------------------------------------------
+    /*******************************************************
+     * ADD LOG (BONUS / PENALTY / OLD SYSTEM)
+     *******************************************************/
     if (action === "add_log") {
 
       const uid = params.uid;
@@ -396,9 +225,9 @@ function doPost(e) {
       return createResponse(true, "تم إضافة السجل بنجاح.");
     }
 
-    //-------------------------------------------------------------
-    // APPROVE LOG
-    //-------------------------------------------------------------
+    /*******************************************************
+     * APPROVE LOG
+     *******************************************************/
     if (action === "approve_log") {
 
       const uid = params.uid;
@@ -407,8 +236,8 @@ function doPost(e) {
       const logs = shMemberLogs.getDataRange().getValues();
 
       for (let i=1; i<logs.length; i++) {
-
         if (logs[i][0] === uid && logs[i][1] === logId) {
+
           shMemberLogs.getRange(i+1, 11).setValue("approved");
           shMemberLogs.getRange(i+1, 12).setValue(params._u);
 
@@ -419,13 +248,9 @@ function doPost(e) {
       return createResponse(false, "السجل غير موجود.");
     }
 
-    /**************************************************************
-     * NEW ENGINE (MonthlyEval + Activity)
-     **************************************************************/
-
-    //-------------------------------------------------------------
-    // ADD MONTHLY EVALUATION
-    //-------------------------------------------------------------
+    /*******************************************************
+     * MONTHLY EVALUATION
+     *******************************************************/
     if (action === "add_month_eval") {
 
       try {
@@ -460,21 +285,31 @@ function doPost(e) {
           Notes: params.Notes || ""
         };
 
-        const result = saveMonthlyEvaluation(payload);
+        shMemberLogs.appendRow([
+          payload.MemberUID,
+          "EVAL_" + Utilities.getUuid().split("-")[0],
+          "تقييم شهري",
+          "",
+          "",
+          "",
+          "",
+          "",
+          "",
+          payload.FinalScore,
+          "approved",
+          params._u
+        ]);
 
-        if (result.success)
-          return createResponse(true, "تم حفظ التقييم الشهري بنجاح.");
-
-        return createResponse(false, result.error);
+        return createResponse(true, "تم حفظ التقييم الشهري بنجاح.");
 
       } catch(err) {
         return createResponse(false, "خطأ أثناء حفظ التقييم: " + err);
       }
     }
 
-    //-------------------------------------------------------------
-    // ADD ACTIVITY
-    //-------------------------------------------------------------
+    /*******************************************************
+     * ACTIVITY
+     *******************************************************/
     if (action === "add_activity") {
 
       try {
@@ -487,21 +322,27 @@ function doPost(e) {
           Score: params.Score || 0
         };
 
-        const result = saveActivity(payload);
+        const sh = getSheet(SHEET_ACT);
 
-        if (result.success)
-          return createResponse(true, "تم تسجيل النشاط بنجاح.");
+        sh.appendRow([
+          payload.MemberUID,
+          payload.Type,
+          payload.Date,
+          payload.Description,
+          payload.Score,
+          JSON.stringify(payload)
+        ]);
 
-        return createResponse(false, result.error);
+        return createResponse(true, "تم تسجيل النشاط بنجاح.");
 
       } catch(err) {
         return createResponse(false, "خطأ أثناء حفظ النشاط: " + err);
       }
     }
 
-    /**************************************************************
+    /*******************************************************
      * TOP 3
-     **************************************************************/
+     *******************************************************/
     if (action === "top3") {
 
       try {
@@ -514,19 +355,13 @@ function doPost(e) {
         const evals   = shEval.getDataRange().getValues();
         const logs    = shLogs.getDataRange().getValues();
 
-        const now = new Date();
         const month = params.month;
         const year  = params.year;
 
         let ranking = {};
 
-        //---------------------------------------------------
-        // Monthly Evaluations
-        //---------------------------------------------------
         for (let i=1; i<evals.length; i++) {
-
           if (evals[i][2] === month && String(evals[i][3]) === year) {
-
             const uid = evals[i][0];
             const score = parseInt(evals[i][12]) || 0;
 
@@ -535,9 +370,6 @@ function doPost(e) {
           }
         }
 
-        //---------------------------------------------------
-        // Logs: Bonuses & Penalties
-        //---------------------------------------------------
         for (let i=1; i<logs.length; i++) {
 
           const uid = logs[i][0];
@@ -556,9 +388,6 @@ function doPost(e) {
           if (type === "عقوبة") ranking[uid].logsScore -= pts;
         }
 
-        //---------------------------------------------------
-        // Final Total
-        //---------------------------------------------------
         let arr = [];
 
         Object.values(ranking).forEach(r => {
@@ -570,9 +399,6 @@ function doPost(e) {
 
         let top3 = arr.slice(0, 3);
 
-        //---------------------------------------------------
-        // Attach Member Names
-        //---------------------------------------------------
         for (let m of top3) {
           for (let i=1; i<members.length; i++) {
             if (members[i][6] === m.uid) {
@@ -590,9 +416,9 @@ function doPost(e) {
       }
     }
 
-    /**************************************************************
+    /*******************************************************
      * FULL MEMBER REPORT
-     **************************************************************/
+     *******************************************************/
     if (action === "get_member_report") {
 
       try {
@@ -601,9 +427,9 @@ function doPost(e) {
         if (!uid) return createResponse(false, "MemberUID مفقود");
 
         const shMembers = getSheet(SHEET_MEMBERS);
+        const shLogs    = getSheet(SHEET_MEMBER_LOGS);
         const shEval    = getSheet(SHEET_EVAL);
         const shAct     = getSheet(SHEET_ACT);
-        const shLogs    = getSheet(SHEET_MEMBER_LOGS);
 
         const members = shMembers.getDataRange().getValues();
         const evals   = shEval.getDataRange().getValues();
@@ -613,142 +439,4 @@ function doPost(e) {
         let result = {
           profile: {},
           evaluations: [],
-          activities: [],
-          logs: [],
-          score: {
-            evalScore: 0,
-            activityScore: 0,
-            bonus: 0,
-            penalty: 0,
-            total: 0
-          }
-        };
-
-        //---------------------------------------------------
-        // Profile
-        //---------------------------------------------------
-        let found = false;
-
-        for (let i=1; i<members.length; i++) {
-          if (members[i][6] === uid) {
-            result.profile = {
-              MemberID: members[i][0],
-              name:     members[i][1],
-              photo:    members[i][2],
-              joinDate: members[i][3],
-              status:   members[i][4],
-              sector:   members[i][5],
-              uid:      members[i][6]
-            };
-            found = true;
-            break;
-          }
-        }
-
-        if (!found)
-          return createResponse(false, "لم يتم العثور على العضو");
-
-        //---------------------------------------------------
-        // Evaluations
-        //---------------------------------------------------
-        for (let i=1; i<evals.length; i++) {
-
-          if (evals[i][0] === uid) {
-
-            result.evaluations.push({
-              Date: evals[i][1],
-              Month: evals[i][2],
-              Year: evals[i][3],
-              MeetingMode: evals[i][4],
-              MeetingStatus: evals[i][5],
-              DelayMinutes: evals[i][6],
-              AttendanceScore: evals[i][7],
-              ActivityScore : evals[i][8],
-              TaskScore     : evals[i][9],
-              Bonus         : evals[i][10],
-              Penalty       : evals[i][11],
-              FinalScore    : evals[i][12],
-              Notes: evals[i][13]
-            });
-
-            result.score.evalScore += parseInt(evals[i][12]) || 0;
-          }
-        }
-
-        //---------------------------------------------------
-        // Activities
-        //---------------------------------------------------
-        for (let i=1; i<acts.length; i++) {
-
-          if (acts[i][0] === uid) {
-
-            result.activities.push({
-              Type: acts[i][1],
-              Date: acts[i][2],
-              Description: acts[i][3],
-              Score: acts[i][4]
-            });
-
-            result.score.activityScore += parseInt(acts[i][4]) || 0;
-          }
-        }
-
-        //---------------------------------------------------
-        // Logs (Bonus/Penalty)
-        //---------------------------------------------------
-        for (let i=1; i<logs.length; i++) {
-
-          if (logs[i][0] === uid && logs[i][10] === "approved") {
-
-            const type = logs[i][2];
-            const reason = logs[i][3];
-
-            let pts = 0;
-            const m = String(reason).match(/\d+/);
-            if (m) pts = parseInt(m[0]);
-
-            if (type === "بونص")  result.score.bonus   += pts;
-            if (type === "عقوبة") result.score.penalty += pts;
-
-            result.logs.push({
-              logId: logs[i][1],
-              type,
-              reason,
-              admin: logs[i][11]
-            });
-          }
-        }
-
-        //---------------------------------------------------
-        // TOTAL SCORE
-        //---------------------------------------------------
-        result.score.total =
-            result.score.evalScore +
-            result.score.activityScore +
-            result.score.bonus -
-            result.score.penalty;
-
-        return createResponse(true, result);
-
-      } catch(err) {
-        return createResponse(false, "خطأ في تقرير العضو: " + err);
-      }
-    }
-
-    //-------------------------------------------------------------
-    // UNKNOWN ACTION
-    //-------------------------------------------------------------
-    return createResponse(false, "أمر غير معروف");
-
-  } catch (err) {
-
-    logEvent("SYSTEM","CRASH","ERROR","","",err.toString());
-    return createResponse(false, "خطأ داخلي: " + err);
-
-  } finally {
-
-    lock.releaseLock();
-
-  }
-
-}
+          activities:
