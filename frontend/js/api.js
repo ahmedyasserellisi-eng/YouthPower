@@ -1,54 +1,72 @@
 /* ============================================================
-    YouthPower HR - API Communication
-    Version: 5.2 PRO (2026)
+    YouthPower HR - Frontend API Connector
+    Version 5.2 PRO (2026)
 ============================================================ */
 
-// ضع هنا نفس رابط Google Script الخاص بك
-const API_URL =
-    "https://script.google.com/macros/s/AKfycbzQzKyi3mpV4E9xEAjSHtMib3zfLlg012LuM4RAHdwIjUN9y2g1V0jnv-RcQtabwO77dA/exec";
+/* ------------------------------------------------------------
+    BACKEND URL (YOUR APPS SCRIPT DEPLOYMENT URL)
+------------------------------------------------------------ */
+// ⚠️ IMPORTANT — ضع رابط Web App الفعلي هنا
+const API_URL = "YOUR_GOOGLE_APPS_SCRIPT_WEB_APP_URL";
+
 
 /* ------------------------------------------------------------
-    MAIN API REQUEST FUNCTION
+    GENERAL FETCH WRAPPER
 ------------------------------------------------------------ */
-async function apiRequest(payload) {
+async function apiRequest(body = {}) {
     try {
-        // Handle auth injection
-        if (
-            payload.action !== "login" &&
-            authState.token &&
-            authState.user &&
-            authState.sig
-        ) {
-            payload = attachAuth(payload);
+        // Attach auth credentials if logged in
+        if (authState && authState.user) {
+            body._u = authState.user;
+            body._t = authState.token;
+            body._s = authState.sig;
         }
 
-        const response = await fetch(API_URL, {
+        const res = await fetch(API_URL, {
             method: "POST",
-            headers: {
-                "Content-Type": "text/plain;charset=utf-8"
-            },
-            body: JSON.stringify(payload)
+            contentType: "application/json",
+            body: JSON.stringify(body)
         });
 
-        const res = await response.json();
-
-        // Auto logout on expired session
-        if (!res.success && res.error) {
-            if (
-                res.error.includes("انتهت الجلسة") ||
-                res.error.includes("توثيق")
-            ) {
-                showToast("انتهت الجلسة الأمنية — يرجى تسجيل الدخول مرة أخرى", "error");
-                setTimeout(logout, 1800);
-            }
-        }
-
-        return res;
-
+        return await res.json();
     } catch (err) {
-        console.error("API Error:", err);
-        showToast("تعذر الاتصال بالخادم", "error");
-        return { success: false, error: "Connection Error" };
+        console.error("API error:", err);
+        return { success: false, error: "تعذر الاتصال بالخادم" };
     }
 }
-// api.js
+
+/* ------------------------------------------------------------
+    SPECIFIC SHORTCUTS
+------------------------------------------------------------ */
+function apiSearchMember(id) {
+    return apiRequest({ action: "search", id });
+}
+
+function apiGetStats() {
+    return apiRequest({ action: "stats" });
+}
+
+function apiAddLog(payload) {
+    return apiRequest({ action: "add_log", ...payload });
+}
+
+function apiAddMonthlyEvaluation(payload) {
+    return apiRequest({ action: "add_month_eval", ...payload });
+}
+
+function apiAddActivity(payload) {
+    return apiRequest({ action: "add_activity", ...payload });
+}
+
+function apiGetTop3(month, year) {
+    return apiRequest({ action: "top3", month, year });
+}
+
+function apiGetFullReport(uid) {
+    return apiRequest({ action: "get_member_report", MemberUID: uid });
+}
+
+/* ------------------------------------------------------------
+    DEBUG FUNCTION
+------------------------------------------------------------ */
+window.api = (payload) => apiRequest(payload);
