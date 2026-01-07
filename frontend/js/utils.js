@@ -1,128 +1,114 @@
 /* ============================================================
-    YouthPower HR - Utils & Helpers
-    Version: 5.2 PRO (2026)
+    YouthPower HR - Utilities & Helpers
+    Version 5.2 PRO (2026)
 ============================================================ */
 
-/* ---------------------------------------
-    TOAST (Notifications)
------------------------------------------*/
+/* ------------------------------------------------------------
+    TOAST SYSTEM
+------------------------------------------------------------ */
 function showToast(msg, type = "info") {
-    const t = document.getElementById("toast");
+    const toast = document.getElementById("toast");
+    if (!toast) return;
 
     const colors = {
         success: "bg-emerald-600 text-white",
         error: "bg-rose-600 text-white",
-        info: "bg-slate-900 text-white"
+        info: "bg-brand-600 text-white",
+        warn: "bg-amber-500 text-black"
     };
 
-    t.className =
-        `fixed bottom-10 left-1/2 -translate-x-1/2 px-8 py-4 rounded-2xl shadow-xl 
-         transition-all duration-500 z-[300] font-black text-sm ${colors[type]}`;
+    toast.className =
+        `fixed bottom-10 left-1/2 -translate-x-1/2 px-8 py-4 rounded-2xl shadow-xl opacity-0
+         transition-all duration-500 z-[300] ${colors[type]}`;
 
-    t.innerText = msg;
-
-    // show
-    t.classList.remove("opacity-0", "translate-y-32");
-    t.classList.add("opacity-100", "translate-y-0");
+    toast.innerText = msg;
 
     setTimeout(() => {
-        t.classList.remove("opacity-100", "translate-y-0");
-        t.classList.add("opacity-0", "translate-y-32");
-    }, 4000);
+        toast.style.opacity = "1";
+        toast.style.transform = "translateX(-50%) translateY(-20px)";
+    }, 50);
+
+    setTimeout(() => {
+        toast.style.opacity = "0";
+        toast.style.transform = "translateX(-50%)";
+    }, 2500);
 }
 
-
-/* ---------------------------------------
-    FIX GOOGLE DRIVE IMAGE LINKS
------------------------------------------*/
+/* ------------------------------------------------------------
+    FIX IMAGE URL (Google Drive direct link)
+------------------------------------------------------------ */
 function fixImg(url) {
-    if (!url || typeof url !== "string")
-        return "https://ui-avatars.com/api/?background=172554&color=fff&name=User";
+    if (!url) return "https://via.placeholder.com/200x200?text=No+Image";
 
-    // Direct links → OK
-    if (url.startsWith("http") && !url.includes("drive.google.com"))
-        return url;
-
-    // Google Drive Link → Convert to direct view
+    // Google Drive URL → convert to viewable direct link
     if (url.includes("drive.google.com")) {
-        const match = url.match(/[-\w]{25,}/);
-        if (match)
-            return `https://drive.google.com/uc?export=view&id=${match[0]}`;
+        const id = url.match(/[-\w]{25,}/);
+        return id ? `https://drive.google.com/uc?export=view&id=${id[0]}` : url;
     }
 
-    return "https://ui-avatars.com/api/?background=172554&color=fff&name=User";
+    return url;
 }
 
-
-/* ---------------------------------------
-    NUMBER EXTRACTION
------------------------------------------*/
-function extractNumber(text) {
-    const m = String(text).match(/\d+/);
+/* ------------------------------------------------------------
+    EXTRACT NUMBER FROM A STRING
+    Example: "خصم 5 نقاط" → 5
+------------------------------------------------------------ */
+function extractNumber(str) {
+    if (!str) return 0;
+    const m = String(str).match(/\d+/);
     return m ? parseInt(m[0]) : 0;
 }
 
-
-/* ---------------------------------------
-    DARK MODE TOGGLE
------------------------------------------*/
+/* ------------------------------------------------------------
+    DARK MODE TOGGLER
+------------------------------------------------------------ */
 function toggleDarkMode() {
     const html = document.documentElement;
-    if (html.classList.contains("dark")) {
+    const isDark = html.classList.contains("dark");
+
+    if (isDark) {
         html.classList.remove("dark");
-        localStorage.theme = "light";
+        localStorage.setItem("darkMode", "0");
     } else {
         html.classList.add("dark");
-        localStorage.theme = "dark";
+        localStorage.setItem("darkMode", "1");
     }
 }
 
-
-/* ---------------------------------------
-    REPORT POPUP CONTROLS
------------------------------------------*/
-function openReportPopup() {
-    document.getElementById("reportPopup").classList.remove("hidden");
-    document.getElementById("reportPopup").classList.add("flex");
-}
-
-function closeReportPopup() {
-    document.getElementById("reportPopup").classList.add("hidden");
-    document.getElementById("reportPopup").classList.remove("flex");
-}
-
-
-/* ---------------------------------------
-    HTML CLEANER
------------------------------------------*/
-function clearElement(id) {
-    const el = document.getElementById(id);
-    if (el) el.innerHTML = "";
-}
-
-
-/* ---------------------------------------
-    DATE FORMATTER
------------------------------------------*/
-function formatDate(dateStr) {
-    if (!dateStr) return "--";
-    try {
-        const d = new Date(dateStr);
-        return d.toLocaleDateString("ar-EG");
-    } catch {
-        return dateStr;
+/* Load saved theme */
+(function initTheme() {
+    const saved = localStorage.getItem("darkMode");
+    if (saved === "1") {
+        document.documentElement.classList.add("dark");
     }
-}
+})();
 
+/* ------------------------------------------------------------
+    POPULATE MONTH & YEAR SELECT BOXES
+------------------------------------------------------------ */
+(function initDateSelectors() {
+    const mSel = document.getElementById("evalMonthSelect");
+    const ySel = document.getElementById("evalYearSelect");
+    const rmSel = document.getElementById("rankMonth");
+    const rySel = document.getElementById("rankYear");
 
-/* ---------------------------------------
-    LOADING ELEMENT CREATOR
------------------------------------------*/
-function createLoader() {
-    return `
-        <div class="text-center py-10 opacity-50">
-            <i class="fas fa-spinner fa-spin text-4xl"></i>
-        </div>
-    `;
-}
-// utils.js
+    const months = [
+        "يناير", "فبراير", "مارس", "أبريل", "مايو", "يونيو",
+        "يوليو", "أغسطس", "سبتمبر", "أكتوبر", "نوفمبر", "ديسمبر"
+    ];
+
+    if (mSel && rmSel) {
+        months.forEach((m, i) => {
+            mSel.innerHTML += `<option value="${m}">${m}</option>`;
+            rmSel.innerHTML += `<option value="${m}">${m}</option>`;
+        });
+    }
+
+    const year = new Date().getFullYear();
+    if (ySel && rySel) {
+        for (let y = year - 3; y <= year + 1; y++) {
+            ySel.innerHTML += `<option value="${y}">${y}</option>`;
+            rySel.innerHTML += `<option value="${y}">${y}</option>`;
+        }
+    }
+})();
