@@ -6,7 +6,7 @@
 /*  ============================================
     ضع هنا رابط الـ Web App من Google Apps Script
     مثال:
-    const API_URL = "https://script.google.com/macros/s/XXXX/exec";
+    const API_URL = "https://script.google.com/macros/s/AKfycbyls10eMc1qIy6c0esdiNdZpGgrBFMWzff5IOskmYuTBo4krP-Hzt_8fZFdIGFb7zqSmA/exec";
 ================================================ */
 const API_URL = "https://script.google.com/macros/s/AKfycbyls10eMc1qIy6c0esdiNdZpGgrBFMWzff5IOskmYuTBo4krP-Hzt_8fZFdIGFb7zqSmA/exec";
 
