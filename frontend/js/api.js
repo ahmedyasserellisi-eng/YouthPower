@@ -15,26 +15,24 @@ const API_URL = "https://script.google.com/macros/s/AKfycbyls10eMc1qIy6c0esdiNdZ
     GENERAL FETCH WRAPPER — NO PRE-FLIGHT CORS
     (مهم جداً: لا نستخدم application/json)
 ------------------------------------------------------------ */
-async function apiRequest(body = {}) {
+async function apiRequest(data) {
+    const payload = {
+        ...data,
+        _u: authState.user,
+        _t: authState.token,
+        _s: authState.sig
+    };
 
-    try {
-        // Attach auth credentials automatically
-        if (window.authState && authState.user) {
-            body._u = authState.user;
-            body._t = authState.token;
-            body._s = authState.sig;
-        }
+    const response = await fetch(API_URL, {
+        method: "POST",
+        headers: {
+            "Content-Type": "application/json"
+        },
+        body: JSON.stringify(payload)
+    });
 
-        const res = await fetch(API_URL, {
-            method: "POST",
-
-            // ❗❗ مهم جداً — عدم تفعيل preflight
-            headers: {
-                "Content-Type": "text/plain;charset=UTF-8"
-            },
-
-            body: JSON.stringify(body)
-        });
+    return await response.json();
+}
 
         // لو الرد مش JSON هنعرف من الخطأ
         const text = await res.text();
