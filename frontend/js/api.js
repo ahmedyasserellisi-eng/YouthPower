@@ -3,24 +3,26 @@
     Version 5.2 PRO (2026)
 ============================================================ */
 
-// ضع رابط Web App هنا
+// رابط Google Apps Script Web App
 const API_URL = "https://script.google.com/macros/s/AKfycbyAIMKdc6ELTxsEOyJLkuEycRAFAyCNI3hUwmlRTxAfm5Tr-hyWLKrbQJ-EIXKRguP8oA/exec";
 
 /* ------------------------------------------------------------
-    GENERAL FETCH WRAPPER
+    GLOBAL API REQUEST HANDLER
 ------------------------------------------------------------ */
 async function apiRequest(body = {}) {
     try {
-        // Attach auth credentials if logged in
+        // إضافة بيانات تسجيل الدخول تلقائياً لو المستخدم مسجّل
         if (authState && authState.user) {
-            body._u = authState.user;
-            body._t = authState.token;
-            body._s = authState.sig;
+            body._u = authState.user;      // username
+            body._t = authState.token;     // encoded token
+            body._s = authState.sig;       // signature
         }
 
         const res = await fetch(API_URL, {
             method: "POST",
-            headers: { "Content-Type": "application/json" },
+            headers: { 
+                "Content-Type": "application/json"
+            },
             body: JSON.stringify(body)
         });
 
@@ -34,7 +36,7 @@ async function apiRequest(body = {}) {
 }
 
 /* ------------------------------------------------------------
-    SHORTCUTS
+    SHORTCUT HELPERS
 ------------------------------------------------------------ */
 function apiSearchMember(id) {
     return apiRequest({ action: "search", id });
@@ -64,4 +66,5 @@ function apiGetFullReport(uid) {
     return apiRequest({ action: "get_member_report", MemberUID: uid });
 }
 
+// مفتاح عام للاتصال بأي أمر
 window.api = (payload) => apiRequest(payload);
