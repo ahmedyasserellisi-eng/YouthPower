@@ -15,40 +15,27 @@ const API_URL = "https://script.google.com/macros/s/AKfycbyls10eMc1qIy6c0esdiNdZ
     GENERAL FETCH WRAPPER — NO PRE-FLIGHT CORS
     (مهم جداً: لا نستخدم application/json)
 ------------------------------------------------------------ */
-async function apiRequest(data) {
-    const payload = {
-        ...data,
-        _u: authState.user,
-        _t: authState.token,
-        _s: authState.sig
-    };
-
-    const response = await fetch(API_URL, {
-        method: "POST",
-        headers: {
-            "Content-Type": "application/json"
-        },
-        body: JSON.stringify(payload)
-    });
-
-    return await response.json();
-}
-
-        // لو الرد مش JSON هنعرف من الخطأ
-        const text = await res.text();
-        try {
-            return JSON.parse(text);
-        } catch (e) {
-            console.error("API returned non-JSON:", text);
-            return { success: false, error: "الرد من الخادم غير صالح" };
+async function apiRequest(body = {}) {
+    try {
+        // لا نرسل بيانات التوثيق أثناء login
+        if (body.action !== "login") {
+            body._u = authState.user;
+            body._t = authState.token;
+            body._s = authState.sig;
         }
 
+        const res = await fetch(API_URL, {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify(body)
+        });
+
+        return await res.json();
     } catch (err) {
         console.error("API ERROR:", err);
         return { success: false, error: "تعذر الاتصال بالخادم" };
     }
 }
-
 
 /* ------------------------------------------------------------
     SHORTCUTS (اختصارات للعمليات)
