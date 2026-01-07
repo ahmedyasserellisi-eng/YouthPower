@@ -20,7 +20,6 @@ const SHEET_REP           = "ReportsCache";
 const SECRET_KEY = "YouthPower_Secure_2026_PRO_KEY"; 
 const SESSION_EXPIRY_MS = 48 * 60 * 60 * 1000; // 48 ساعة
 
-
 //------------------------------------------------------
 // USER ROLES
 //------------------------------------------------------
@@ -30,19 +29,26 @@ const USERS = {
   "viewer": { pass: "12345", role: "viewer" }
 };
 
-
 //=====================================================================
-// RESPONSE
+// FIXED CORS + JSON RESPONSE =========================================
 //=====================================================================
 function createResponse(success, payload) {
   let res = { success, timestamp: new Date().toISOString() };
   if (success) res.data = payload;
   else res.error = payload;
 
-  return ContentService.createTextOutput(JSON.stringify(res))
-        .setMimeType(ContentService.MimeType.JSON);
-}
+  const output = ContentService.createTextOutput(JSON.stringify(res));
+  output.setMimeType(ContentService.MimeType.JSON);
 
+  // *******************************
+  // 🔥 CRS HEADERS FIX HERE
+  // *******************************
+  output.setHeader("Access-Control-Allow-Origin", "*");
+  output.setHeader("Access-Control-Allow-Methods", "GET, POST, OPTIONS");
+  output.setHeader("Access-Control-Allow-Headers", "Content-Type");
+
+  return output;
+}
 
 //=====================================================================
 // SIGNATURE
@@ -51,7 +57,6 @@ function generateSignature(data) {
   const sig = Utilities.computeHmacSha256Signature(data, SECRET_KEY);
   return sig.map(b => ('0' + (b & 0xFF).toString(16)).slice(-2)).join('');
 }
-
 
 //=====================================================================
 // UID GENERATOR (Members)
@@ -72,9 +77,7 @@ function generateMemberUIDs() {
   }
 
   sh.getRange(2,1,data.length,7).setValues(data);
-  SpreadsheetApp.getUi().alert("Generated UID for " + updates + " members.");
 }
-
 
 //=====================================================================
 // AUTO UID ON EDIT
@@ -99,7 +102,6 @@ function onEdit(e) {
   }
 }
 
-
 //=====================================================================
 // AUTO TRIGGER INSTALL
 //=====================================================================
@@ -115,9 +117,8 @@ function installTrigger() {
   }
 }
 
-
 //=====================================================================
-// LOGGING
+// LOGGING SHEET
 //=====================================================================
 function logEvent(user, action, status, token, sig, msg) {
   const sh = SpreadsheetApp.getActive().getSheetByName(SHEET_LOGS);
@@ -131,7 +132,6 @@ function logEvent(user, action, status, token, sig, msg) {
     msg || ""
   ]);
 }
-
 
 //=====================================================================
 // SECURITY
@@ -162,7 +162,6 @@ function isAuthorized(params) {
   }
 }
 
-
 //=====================================================================
 // GET SHEET
 //=====================================================================
@@ -170,11 +169,9 @@ function getSheet(name) {
   return SpreadsheetApp.getActiveSpreadsheet().getSheetByName(name);
 }
 
-
 /*******************************************************
  *    HR ENGINE EXTENSIONS
  *******************************************************/
-
 
 //------------------------------------------------------
 // SAVE MONTHLY EVALUATION
@@ -205,7 +202,6 @@ function saveMonthlyEvaluation(payload) {
   return { success:true };
 }
 
-
 //------------------------------------------------------
 // SAVE ACTIVITY
 //------------------------------------------------------
@@ -213,41 +209,34 @@ function saveActivity(payload) {
   const sh = getSheet(SHEET_ACT);
   if (!sh) return { success:false, error:"ورقة MemberActivities غير موجودة" };
 
-  const row = [
+  sh.appendRow([
     payload.MemberUID,
     payload.Type,
     payload.Date,
     payload.Description,
     payload.Score,
     JSON.stringify(payload)
-  ];
+  ]);
 
-  sh.appendRow(row);
   return { success:true };
 }
-
 
 //=====================================================================
 // doGet
 //=====================================================================
-function doGet() {
-  return ContentService.createTextOutput(
-    "YouthPower HR API V5.2 Engine Running..."
-  );
+function doGet(e) {
+  return createResponse(true, "YouthPower HR API V5.2 Engine Running...");
 }
 
-
 //=====================================================================
-// doPost — START
+// doPost — MAIN CONTROLLER
 //=====================================================================
 function doPost(e) {
-
   const lock = LockService.getScriptLock();
   if (!lock.tryLock(20000))
     return createResponse(false, "الخادم مشغول، حاول بعد لحظات");
 
   try {
-
     installTrigger();
 
     const params = JSON.parse(e.postData.contents || "{}");
@@ -293,11 +282,9 @@ function doPost(e) {
       return createResponse(false, auth);
     }
 
-
     /**************************************************************
      *                    SYSTEM ACTIONS
      **************************************************************/
-
 
     //-------------------------------------------------------------
     // STATS
@@ -317,9 +304,7 @@ function doPost(e) {
 
       for (let j=1; j<logs.length; j++) {
         if (logs[j][10] === "pending") {
-
           stats.pendingReviews++;
-
           notifications.push({
             memberUID: logs[j][0],
             logId: logs[j][1],
@@ -331,8 +316,6 @@ function doPost(e) {
 
       return createResponse(true, { stats, notifications });
     }
-
-
 
     //-------------------------------------------------------------
     // SEARCH MEMBER
@@ -385,10 +368,8 @@ function doPost(e) {
       return createResponse(true, member);
     }
 
-
-
     //-------------------------------------------------------------
-    // ADD LOG (OLD SYSTEM)
+    // ADD LOG
     //-------------------------------------------------------------
     if (action === "add_log") {
 
@@ -415,8 +396,6 @@ function doPost(e) {
       return createResponse(true, "تم إضافة السجل بنجاح.");
     }
 
-
-
     //-------------------------------------------------------------
     // APPROVE LOG
     //-------------------------------------------------------------
@@ -440,12 +419,9 @@ function doPost(e) {
       return createResponse(false, "السجل غير موجود.");
     }
 
-
-
     /**************************************************************
-     *                  NEW ENGINE (MonthlyEval + Activity)
+     * NEW ENGINE (MonthlyEval + Activity)
      **************************************************************/
-
 
     //-------------------------------------------------------------
     // ADD MONTHLY EVALUATION
@@ -496,8 +472,6 @@ function doPost(e) {
       }
     }
 
-
-
     //-------------------------------------------------------------
     // ADD ACTIVITY
     //-------------------------------------------------------------
@@ -525,10 +499,8 @@ function doPost(e) {
       }
     }
 
-
-
     /**************************************************************
-     *                          TOP 3
+     * TOP 3
      **************************************************************/
     if (action === "top3") {
 
@@ -543,8 +515,8 @@ function doPost(e) {
         const logs    = shLogs.getDataRange().getValues();
 
         const now = new Date();
-        const month = params.month || now.toLocaleString("ar-EG", { month:"long" });
-        const year  = params.year  || now.getFullYear().toString();
+        const month = params.month;
+        const year  = params.year;
 
         let ranking = {};
 
@@ -584,7 +556,6 @@ function doPost(e) {
           if (type === "عقوبة") ranking[uid].logsScore -= pts;
         }
 
-
         //---------------------------------------------------
         // Final Total
         //---------------------------------------------------
@@ -619,10 +590,8 @@ function doPost(e) {
       }
     }
 
-
-
     /**************************************************************
-     *                     FULL MEMBER REPORT
+     * FULL MEMBER REPORT
      **************************************************************/
     if (action === "get_member_report") {
 
@@ -766,12 +735,10 @@ function doPost(e) {
       }
     }
 
-
     //-------------------------------------------------------------
     // UNKNOWN ACTION
     //-------------------------------------------------------------
     return createResponse(false, "أمر غير معروف");
-
 
   } catch (err) {
 
