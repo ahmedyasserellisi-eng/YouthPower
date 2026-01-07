@@ -1,1 +1,438 @@
-سي
+<!DOCTYPE html>
+<html lang="ar" dir="rtl" class="scroll-smooth">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Youth Power | HR Ecosystem v5.2 PRO</title>
+
+    <!-- Tailwind -->
+    <script src="https://cdn.tailwindcss.com"></script>
+
+    <!-- PDF -->
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/html2pdf.js/0.10.1/html2pdf.bundle.min.js"></script>
+
+    <!-- Icons -->
+    <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css" rel="stylesheet">
+
+    <!-- Cairo Font -->
+    <link href="https://fonts.googleapis.com/css2?family=Cairo:wght@300;400;500;600;700;800;900&display=swap" rel="stylesheet">
+
+    <script>
+        tailwind.config = {
+            darkMode: 'class',
+            theme: {
+                extend: {
+                    colors: {
+                        brand: {
+                            50: '#f0f7ff',
+                            100: '#e0effe',
+                            200: '#bae0fd',
+                            300: '#7cc2fb',
+                            400: '#38a5f8',
+                            500: '#0c87eb',
+                            600: '#2563eb',
+                            700: '#1d4ed8',
+                            800: '#1e40af',
+                            900: '#172554'
+                        },
+                        accent: {
+                            gold: '#f59e0b',
+                            emerald: '#10b981',
+                            rose: '#f43f5e'
+                        }
+                    },
+                    fontFamily: { sans: ['Cairo', 'sans-serif'] },
+                    borderRadius: { '4xl': '2rem', '5xl': '3rem' }
+                }
+            }
+        }
+    </script>
+
+    <style>
+        body {
+            font-family: 'Cairo', sans-serif;
+        }
+
+        .glass {
+            background: rgba(255, 255, 255, 0.85);
+            backdrop-filter: blur(14px);
+            border: 1px solid rgba(255, 255, 255, 0.2);
+        }
+
+        .dark .glass {
+            background: rgba(15, 23, 42, 0.85);
+            border-color: rgba(255, 255, 255, 0.05);
+        }
+
+        .official-report {
+            background: white;
+            color: black;
+            padding: 40px;
+            direction: rtl;
+            font-family: 'Cairo', sans-serif;
+        }
+    </style>
+</head>
+
+<body class="bg-slate-50 dark:bg-slate-950 text-slate-900 dark:text-slate-100 min-h-screen">
+
+    <!-- ============ LOGIN OVERLAY ============ -->
+    <div id="loginOverlay" class="fixed inset-0 z-[200] flex items-center justify-center bg-slate-900/95 backdrop-blur-xl">
+        <div class="glass p-12 md:p-16 rounded-[4xl] w-full max-w-lg mx-4 text-center">
+            <h2 class="text-4xl font-black mb-6">Youth Power</h2>
+
+            <div class="space-y-5">
+                <input id="username" type="text" placeholder="اسم المستخدم" 
+                       class="w-full p-4 rounded-2xl bg-slate-100 dark:bg-slate-800">
+
+                <input id="password" type="password" placeholder="كلمة المرور" 
+                       class="w-full p-4 rounded-2xl bg-slate-100 dark:bg-slate-800">
+
+                <button onclick="handleLogin()" id="loginBtn"
+                    class="w-full bg-brand-600 text-white font-black py-4 rounded-2xl">
+                    تحقق من الهوية
+                </button>
+
+                <div id="loginStatus" class="text-accent-rose text-xs font-bold"></div>
+            </div>
+        </div>
+    </div>
+
+    <!-- ============ MAIN CONTENT ============ -->
+    <div id="mainContent" class="hidden opacity-0">
+
+        <!-- NAVBAR -->
+        <nav class="sticky top-0 z-[100] glass border-b dark:border-slate-800">
+            <div class="container mx-auto px-6 h-20 flex justify-between items-center">
+
+                <div class="flex items-center gap-3">
+                    <div class="w-12 h-12 bg-brand-600 rounded-xl flex items-center justify-center text-white shadow-lg">
+                        <i class="fas fa-bolt"></i>
+                    </div>
+                    <div>
+                        <h1 class="text-xl font-black">Youth Power</h1>
+                        <p class="text-[9px] font-bold text-brand-500">HR Ecosystem</p>
+                    </div>
+                </div>
+
+                <div class="flex items-center gap-4">
+                    <button onclick="switchTab('dashboard')" id="nav-dash" 
+                        class="px-6 py-2 rounded-xl font-black text-sm text-slate-500">
+                        الرئيسية
+                    </button>
+
+                    <button onclick="switchTab('search')" id="nav-search" 
+                        class="px-6 py-2 rounded-xl font-black text-sm text-slate-500">
+                        الأعضاء
+                    </button>
+
+                    <button onclick="switchTab('ranking')" id="nav-top" 
+                        class="px-6 py-2 rounded-xl font-black text-sm text-slate-500">
+                        الأفضل
+                    </button>
+
+                    <button onclick="toggleDarkMode()"
+                        class="w-10 h-10 rounded-xl bg-slate-100 dark:bg-slate-800 flex items-center justify-center">
+                        <i class="fas fa-moon dark:hidden"></i>
+                        <i class="fas fa-sun hidden dark:block"></i>
+                    </button>
+
+                    <button onclick="logout()" 
+                        class="text-accent-rose text-xs font-black flex items-center gap-2">
+                        خروج <i class="fas fa-power-off"></i>
+                    </button>
+                </div>
+            </div>
+        </nav>
+
+        <!-- ============ DASHBOARD VIEW ============ -->
+        <div id="dashboardView" class="container mx-auto px-6 py-10">
+
+            <h2 class="text-3xl font-black mb-6">لوحة التحكم</h2>
+
+            <!-- Dashboard Stats -->
+            <div id="dashboardStats" class="grid grid-cols-1 md:grid-cols-3 gap-6">
+                <div class="glass p-8 rounded-3xl text-center border">
+                    <p class="text-5xl font-black text-brand-600" id="statTotal">0</p>
+                    <p class="mt-2 text-sm opacity-60">إجمالي الأعضاء</p>
+                </div>
+
+                <div class="glass p-8 rounded-3xl text-center border">
+                    <p class="text-5xl font-black text-brand-600" id="statActive">0</p>
+                    <p class="mt-2 text-sm opacity-60">الأعضاء النشطون</p>
+                </div>
+
+                <div class="glass p-8 rounded-3xl text-center border">
+                    <p class="text-5xl font-black text-brand-600" id="statPending">0</p>
+                    <p class="mt-2 text-sm opacity-60">سجلات قيد المراجعة</p>
+                </div>
+            </div>
+
+            <h3 class="text-2xl font-black mt-10 mb-4">التنبيهات</h3>
+            <div id="notificationsList" class="border rounded-3xl glass"></div>
+        </div>
+
+        <!-- ============ SEARCH VIEW ============ -->
+        <div id="searchView" class="hidden container mx-auto px-6 py-10">
+
+            <h2 class="text-3xl font-black mb-6">البحث عن عضو</h2>
+
+            <div class="flex gap-4 mb-6">
+                <input id="searchInput" type="text" placeholder="أدخل رقم العضوية"
+                    class="flex-1 p-4 rounded-2xl bg-slate-100 dark:bg-slate-800">
+
+                <button onclick="searchMember()" 
+                    class="px-8 py-4 bg-brand-600 text-white rounded-2xl font-black">
+                    بحث
+                </button>
+            </div>
+
+            <div id="memberLoader" class="hidden text-center py-10 text-slate-500">
+                <i class="fas fa-spinner fa-spin text-4xl"></i>
+            </div>
+
+            <!-- MEMBER CARD -->
+            <div id="memberCard" class="hidden">
+
+                <div class="glass p-10 rounded-[3rem] border shadow-xl">
+
+                    <div class="flex flex-col md:flex-row justify-between gap-10">
+
+                        <!-- Photo -->
+                        <div class="w-full md:w-1/4 text-center">
+                            <img id="mPhoto" src="" 
+                                 class="w-40 h-40 rounded-3xl object-cover border-4 border-slate-200 mx-auto shadow-lg">
+                            <p id="docIdLabel" class="text-xs opacity-60 mt-2"></p>
+                        </div>
+
+                        <!-- Info -->
+                        <div class="flex-1 space-y-2">
+                            <p><strong>الاسم:</strong> <span id="mName"></span></p>
+                            <p><strong>رقم العضوية:</strong> <span id="mId"></span></p>
+                            <p><strong>القطاع:</strong> <span id="mSector"></span></p>
+                            <p><strong>تاريخ الانضمام:</strong> <span id="mJoinDate"></span></p>
+                        </div>
+
+                        <!-- Total Score -->
+                        <div class="w-full md:w-1/4 text-center">
+                            <p class="text-sm opacity-60">إجمالي النقاط</p>
+                            <p id="mTotalScore" class="text-5xl font-black text-brand-600">0</p>
+                        </div>
+                    </div>
+
+                    <hr class="my-10 opacity-50">
+
+                    <!-- ACTION BUTTONS -->
+                    <div class="flex gap-3 mb-6">
+                        <button id="btn-eval-toggle" onclick="toggleForm('eval')"
+                            class="flex-1 py-3 text-xs font-black rounded-xl text-slate-400">
+                            تقييم شهري
+                        </button>
+
+                        <button id="btn-quick-toggle" onclick="toggleForm('quick')"
+                            class="flex-1 py-3 text-xs font-black rounded-xl text-slate-400">
+                            إجراء سريع
+                        </button>
+
+                        <button id="btn-act-toggle" onclick="toggleForm('activity')"
+                            class="flex-1 py-3 text-xs font-black rounded-xl text-slate-400">
+                            نشاط / مهمة
+                        </button>
+                    </div>
+
+                    <!-- ======================================================= -->
+                    <!-- QUICK ACTION FORM -->
+                    <!-- ======================================================= -->
+                    <div id="form-quick" class="hidden">
+
+                        <div class="flex gap-4 mb-6">
+                            <div id="q-bonus" onclick="setQuickType('بونص')"
+                                class="flex-1 p-6 rounded-2xl border-2 text-center font-black cursor-pointer">
+                                <i class="fas fa-plus text-2xl mb-2"></i>
+                                <p>بونص</p>
+                            </div>
+
+                            <div id="q-penalty" onclick="setQuickType('عقوبة')"
+                                class="flex-1 p-6 rounded-2xl border-2 text-center font-black cursor-pointer">
+                                <i class="fas fa-minus text-2xl mb-2"></i>
+                                <p>خصم</p>
+                            </div>
+                        </div>
+
+                        <div id="pointsSection" class="hidden">
+                            <div class="flex items-center gap-4 mb-4">
+                                <button onclick="adjustPoints(-1)" 
+                                    class="px-4 py-2 bg-slate-200 dark:bg-slate-700 rounded-xl font-black">-</button>
+
+                                <input id="quickPoints" type="number" value="1" min="1" max="100"
+                                    class="w-20 text-center p-3 rounded-xl bg-slate-100 dark:bg-slate-800">
+
+                                <button onclick="adjustPoints(1)" 
+                                    class="px-4 py-2 bg-slate-200 dark:bg-slate-700 rounded-xl font-black">+</button>
+                            </div>
+
+                            <textarea id="quickReason"
+                                class="w-full p-4 rounded-2xl bg-slate-100 dark:bg-slate-800 text-sm"
+                                placeholder="سبب الإجراء"></textarea>
+
+                            <button onclick="submitQuickAction()" id="submitQuickBtn"
+                                class="w-full mt-4 bg-brand-600 text-white py-4 rounded-2xl font-black">
+                                حفظ الإجراء
+                            </button>
+                        </div>
+                    </div>
+
+                    <!-- ======================================================= -->
+                    <!-- MONTHLY EVALUATION FORM -->
+                    <!-- ======================================================= -->
+                    <div id="form-eval" class="hidden">
+
+                        <div class="grid grid-cols-2 gap-4 mb-6">
+                            <select id="evalMonthSelect" class="p-4 rounded-xl bg-slate-100 dark:bg-slate-800"></select>
+
+                            <select id="evalYearSelect" class="p-4 rounded-xl bg-slate-100 dark:bg-slate-800"></select>
+                        </div>
+
+                        <!-- scores -->
+                        <div class="space-y-4">
+                            <label class="block font-bold">الحضور</label>
+                            <input id="AttendanceScore" type="range" min="0" max="20" value="0"
+                                oninput="calcFinalScore()" 
+                                class="w-full">
+
+                            <label class="block font-bold">المشاركة</label>
+                            <input id="ActivityScore" type="range" min="0" max="20" value="0"
+                                oninput="calcFinalScore()" 
+                                class="w-full">
+
+                            <label class="block font-bold">المهام</label>
+                            <input id="TaskScore" type="range" min="0" max="20" value="0"
+                                oninput="calcFinalScore()" 
+                                class="w-full">
+
+                            <label class="block font-bold">بونص إضافي</label>
+                            <input id="Bonus" type="range" min="0" max="10" value="0"
+                                oninput="calcFinalScore()" 
+                                class="w-full">
+
+                            <label class="block font-bold">خصم</label>
+                            <input id="Penalty" type="range" min="0" max="10" value="0"
+                                oninput="calcFinalScore()" 
+                                class="w-full">
+
+                        </div>
+
+                        <div class="text-center mt-6">
+                            <p class="text-sm opacity-60">المجموع النهائي</p>
+                            <p id="finalTotal" class="text-5xl font-black text-brand-600">0</p>
+                        </div>
+
+                        <button onclick="submitEvaluation()" id="submitEvalBtn"
+                            class="w-full mt-8 bg-brand-600 text-white py-4 rounded-2xl font-black">
+                            حفظ التقييم
+                        </button>
+                    </div>
+
+                    <!-- ======================================================= -->
+                    <!-- ACTIVITY FORM -->
+                    <!-- ======================================================= -->
+                    <div id="form-activity" class="hidden">
+
+                        <label class="font-bold block">نوع النشاط</label>
+                        <select id="actType"
+                            class="w-full p-4 rounded-2xl bg-slate-100 dark:bg-slate-800 mb-4">
+                            <option value="meeting">اجتماع</option>
+                            <option value="event">فعالية</option>
+                            <option value="task">مهمة</option>
+                        </select>
+
+                        <div class="flex items-center gap-4 mb-4">
+                            <button id="ms-present" onclick="setMeetStatus('حاضر')"
+                                class="py-2 text-[10px] font-bold border rounded-lg flex-1">
+                                حاضر
+                            </button>
+
+                            <button id="ms-late" onclick="setMeetStatus('متأخر')"
+                                class="py-2 text-[10px] font-bold border rounded-lg flex-1">
+                                متأخر
+                            </button>
+
+                            <button id="ms-absent" onclick="setMeetStatus('غائب')"
+                                class="py-2 text-[10px] font-bold border rounded-lg flex-1">
+                                غائب
+                            </button>
+                        </div>
+
+                        <input id="actDate" type="date"
+                            class="w-full p-4 rounded-2xl bg-slate-100 dark:bg-slate-800 mb-4">
+
+                        <textarea id="actDesc"
+                            class="w-full p-4 rounded-2xl bg-slate-100 dark:bg-slate-800 mb-4"
+                            placeholder="وصف النشاط"></textarea>
+
+                        <label class="font-bold block">الدرجة</label>
+                        <input id="actScore" type="number" min="0" max="20" value="0"
+                            class="w-full p-4 rounded-2xl bg-slate-100 dark:bg-slate-800 mb-4">
+
+                        <button onclick="submitActivity()" id="submitActBtn"
+                            class="w-full bg-brand-600 text-white py-4 rounded-2xl font-black">
+                            حفظ النشاط
+                        </button>
+                    </div>
+
+                    <hr class="my-10 opacity-50">
+
+                    <!-- LOG LIST -->
+                    <h3 class="text-xl font-black mb-4">سجل العضو</h3>
+                    <div id="logList" class="space-y-4"></div>
+
+                    <h3 class="text-xl font-black mt-10 mb-4">الرسم البياني للأداء</h3>
+                    <div id="chartContainer" class="h-40 flex gap-2 justify-between"></div>
+
+                    <button onclick="downloadOfficialReport()"
+                        class="w-full bg-brand-600 text-white mt-10 py-4 rounded-2xl font-black">
+                        استخراج تقرير رسمي PDF
+                    </button>
+                </div>
+            </div>
+
+        </div>
+
+        <!-- ============ RANKING VIEW ============ -->
+        <div id="rankingView" class="hidden container mx-auto px-6 py-10">
+            <h2 class="text-3xl font-black mb-6">أفضل 3 أعضاء</h2>
+
+            <div class="flex gap-4 mb-6">
+                <select id="rankMonth" class="p-4 rounded-xl bg-slate-100 dark:bg-slate-800"></select>
+                <select id="rankYear" class="p-4 rounded-xl bg-slate-100 dark:bg-slate-800"></select>
+
+                <button onclick="onRankingTabOpen()" 
+                    class="px-8 py-4 bg-brand-600 text-white rounded-2xl font-black">
+                    تحديث
+                </button>
+            </div>
+
+            <div id="topLoader" class="hidden text-center py-10">
+                <i class="fas fa-spinner fa-spin text-4xl"></i>
+            </div>
+
+            <div id="top3Container" class="grid grid-cols-1 md:grid-cols-3 gap-6"></div>
+        </div>
+
+    </div>
+
+    <!-- TOAST -->
+    <div id="toast"
+        class="fixed bottom-10 left-1/2 -translate-x-1/2 px-8 py-4 rounded-2xl shadow-xl opacity-0 transition-all duration-500 z-[300]">
+    </div>
+
+    <!-- JS FILES -->
+    <script src="js/utils.js"></script>
+    <script src="js/auth.js"></script>
+    <script src="js/api.js"></script>
+    <script src="js/ui.js"></script>
+    <script src="js/charts.js"></script>
+
+</body>
+</html>
