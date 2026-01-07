@@ -20,8 +20,12 @@ async function apiRequest(body = {}) {
 
         const res = await fetch(API_URL, {
             method: "POST",
-            headers: { 
-                "Content-Type": "application/json"
+            // بدون headers → يجعلها simple request
+const res = await fetch(API_URL, {
+    method: "POST",
+    body: JSON.stringify(body)
+});
+
             },
             body: JSON.stringify(body)
         });
