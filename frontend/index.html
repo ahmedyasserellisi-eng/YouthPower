@@ -16,7 +16,8 @@
     <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css" rel="stylesheet">
 
     <!-- Cairo Font -->
-    <link href="https://fonts.googleapis.com/css2?family=Cairo:wght@300;400;500;600;700;800;900&display=swap" rel="stylesheet">
+    <link href="https://fonts.googleapis.com/css2?family=Cairo:wght@300;400;500;600;700;800;900&display=swap"
+          rel="stylesheet">
 
     <script>
         tailwind.config = {
@@ -71,6 +72,30 @@
             padding: 40px;
             direction: rtl;
             font-family: 'Cairo', sans-serif;
+        }
+
+        .nav-btn {
+            padding: .6rem 1.2rem;
+            border-radius: .75rem;
+            font-weight: 800;
+            color: #64748b;
+        }
+
+        .nav-btn.active {
+            background: white;
+            color: #0c87eb;
+            box-shadow: 0 4px 14px rgba(2,6,23,.06);
+        }
+
+        .btn-report {
+            display:block;
+            width:100%;
+            padding: .8rem;
+            border-radius: 1rem;
+            font-weight:800;
+            border:1px solid #e6eefc;
+            background:#f8fafc;
+            margin-bottom:.5rem;
         }
     </style>
 </head>
@@ -133,8 +158,44 @@
         <!-- ============ DASHBOARD VIEW ============ -->
         <div id="dashboardView" class="container mx-auto px-6 py-10">
             <h2 class="text-3xl font-black mb-6">لوحة التحكم</h2>
-            <div id="dashboardStats" class="grid grid-cols-1 md:grid-cols-3 gap-6"></div>
-            <div id="notifications" class="mt-10"></div>
+
+            <div class="grid grid-cols-1 lg:grid-cols-3 gap-8">
+                <div class="lg:col-span-2 bg-gradient-to-br from-brand-900 to-brand-700 rounded-[2rem] p-8 text-white">
+                    <h3 class="text-2xl font-black">أهلاً بك، <span id="welcomeName">المسؤول</span></h3>
+                    <p class="mt-2 text-sm opacity-80">منصة إدارة الموارد البشرية</p>
+                    <div class="mt-6 flex gap-4">
+                        <button onclick="switchTab('search')" class="bg-white text-brand-900 px-6 py-2 rounded-xl font-black">بدء البحث</button>
+                        <div class="px-4 py-2 rounded-xl bg-white/10">Live Engine Active</div>
+                    </div>
+                </div>
+
+                <div class="grid grid-cols-2 gap-4">
+                    <div class="bg-white dark:bg-slate-900 p-6 rounded-2xl border">
+                        <p class="text-[10px] text-slate-400 uppercase font-black">إجمالي الأعضاء</p>
+                        <h3 id="statTotal" class="text-3xl font-black text-brand-600">--</h3>
+                    </div>
+                    <div class="bg-white dark:bg-slate-900 p-6 rounded-2xl border">
+                        <p class="text-[10px] text-slate-400 uppercase font-black">الأعضاء الفاعلون</p>
+                        <h3 id="statActive" class="text-3xl font-black text-emerald-600">--</h3>
+                    </div>
+                    <div class="bg-white dark:bg-slate-900 p-6 rounded-2xl border">
+                        <p class="text-[10px] text-slate-400 uppercase font-black">الطلبات المعلقة</p>
+                        <h3 id="statPending" class="text-3xl font-black text-accent-gold">--</h3>
+                    </div>
+                    <div class="bg-white dark:bg-slate-900 p-6 rounded-2xl border">
+                        <p class="text-[10px] text-slate-400 uppercase font-black">المستوى الأمني</p>
+                        <h3 class="text-xl font-black">Level 5.2</h3>
+                    </div>
+                </div>
+            </div>
+
+            <div class="mt-8 bg-white dark:bg-slate-900 rounded-2xl p-6 border">
+                <div class="flex justify-between items-center mb-4">
+                    <h3 class="font-black text-lg">مركز الإشعارات</h3>
+                    <button onclick="loadDashboardStats()" class="px-4 py-2 rounded-xl bg-slate-100 dark:bg-slate-800">تحديث</button>
+                </div>
+                <div id="notificationsList" class="divide-y max-h-52 overflow-y-auto"></div>
+            </div>
         </div>
 
         <!-- ============ SEARCH VIEW ============ -->
@@ -143,7 +204,7 @@
             <h2 class="text-3xl font-black mb-6">البحث عن عضو</h2>
 
             <div class="flex gap-4 mb-6">
-                <input id="searchInput" type="text" placeholder="أدخل رقم العضوية"
+                <input id="searchInput" type="text" placeholder="أدخل رقم العضوية / الرقم القومي / UID"
                     class="flex-1 p-4 rounded-2xl bg-slate-100 dark:bg-slate-800">
                 <button onclick="searchMember()" class="px-8 py-4 bg-brand-600 text-white rounded-2xl font-black">
                     بحث
@@ -154,8 +215,123 @@
                 <i class="fas fa-spinner fa-spin text-4xl"></i>
             </div>
 
-            <div id="memberCard" class="hidden">
-                <!-- يتم ملؤه من ui.js -->
+            <div id="memberCard" class="hidden grid grid-cols-1 xl:grid-cols-3 gap-10 items-start">
+
+                <!-- LEFT — MEMBER DATA -->
+                <div class="xl:col-span-2 space-y-6">
+
+                    <!-- MEMBER PROFILE CARD -->
+                    <div class="bg-white dark:bg-slate-900 p-8 rounded-2xl border">
+                        <div class="flex gap-6 items-center">
+                            <img id="mPhoto" class="w-28 h-28 rounded-xl object-cover border-4 border-white dark:border-slate-800 bg-slate-100" src="" alt="member">
+                            <div>
+                                <h3 id="mName" class="text-2xl font-black">--</h3>
+                                <p class="text-sm text-slate-500">رقم العضوية: <span id="mId" class="font-black">--</span></p>
+                                <p class="text-sm text-slate-500">القطاع: <span id="mSector" class="font-black">--</span></p>
+                                <p class="text-sm text-slate-500">تاريخ الانضمام: <span id="mJoinDate" class="font-black">--</span></p>
+                                <p id="docIdLabel" class="text-xs inline-block mt-2 bg-slate-100 p-2 rounded-xl">UID: --</p>
+                            </div>
+
+                            <div class="ml-auto bg-brand-600 text-white p-6 rounded-2xl text-center w-36">
+                                <p class="text-xs font-bold opacity-70">التقييم العام</p>
+                                <p id="mTotalScore" class="text-4xl font-black">0</p>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- PERFORMANCE CHART -->
+                    <div class="bg-white dark:bg-slate-900 p-8 rounded-2xl border">
+                        <h3 class="font-black text-lg mb-4">الأداء آخر 8 تقييمات</h3>
+                        <div id="chartContainer" class="flex items-end gap-3 h-40"></div>
+                    </div>
+
+                    <!-- LOGS -->
+                    <div class="bg-white dark:bg-slate-900 p-8 rounded-2xl border">
+                        <h3 class="font-black text-lg mb-4">سجل العضو</h3>
+                        <div id="logList" class="space-y-4"></div>
+                    </div>
+                </div>
+
+                <!-- RIGHT — ACTIONS -->
+                <div class="space-y-6 sticky top-28">
+
+                    <div class="bg-slate-50 dark:bg-slate-800 p-6 rounded-2xl border">
+                        <h3 class="font-black text-lg mb-4">إدارة الملف</h3>
+
+                        <div class="flex p-1 bg-white dark:bg-slate-900 rounded-2xl mb-4">
+                            <button id="btn-eval-toggle" onclick="toggleForm('eval')" class="flex-1 py-2 rounded-xl bg-brand-600 text-white font-black">التقييم</button>
+                            <button id="btn-quick-toggle" onclick="toggleForm('quick')" class="flex-1 py-2 rounded-xl">إجراء</button>
+                            <button id="btn-act-toggle" onclick="toggleForm('activity')" class="flex-1 py-2 rounded-xl">نشاط</button>
+                        </div>
+
+                        <!-- FORM: EVALUATION -->
+                        <div id="form-eval" class="space-y-4">
+                            <div class="grid grid-cols-2 gap-2">
+                                <select id="evalMonthSelect" class="p-3 rounded-xl bg-white"></select>
+                                <select id="evalYearSelect" class="p-3 rounded-xl bg-white"></select>
+                            </div>
+
+                            <div id="sliders" class="space-y-3"></div>
+
+                            <div class="bg-brand-600 text-white p-4 rounded-xl text-center">
+                                <p class="text-xs font-black">النتيجة النهائية</p>
+                                <p id="finalTotal" class="text-2xl font-black">0</p>
+                            </div>
+
+                            <button id="submitEvalBtn" onclick="submitEvaluation()" class="w-full bg-slate-900 text-white py-3 rounded-xl font-black">حفظ التقييم</button>
+                        </div>
+
+                        <!-- FORM: QUICK -->
+                        <div id="form-quick" class="hidden space-y-4">
+                            <div class="flex gap-2">
+                                <button id="q-bonus" onclick="setQuickType('بونص')" class="flex-1 p-4 rounded-xl border">مكافأة</button>
+                                <button id="q-penalty" onclick="setQuickType('عقوبة')" class="flex-1 p-4 rounded-xl border">خصم</button>
+                            </div>
+
+                            <div id="pointsSection" class="hidden space-y-3">
+                                <div class="flex items-center justify-between p-3 bg-white rounded-xl">
+                                    <span class="text-xs font-black text-slate-400">المقدار</span>
+                                    <div class="flex items-center gap-3">
+                                        <button onclick="adjustPoints(-1)" class="w-10 h-10 rounded-xl bg-slate-100">-</button>
+                                        <input id="quickPoints" type="number" value="5" readonly class="w-12 text-center font-black text-2xl bg-transparent">
+                                        <button onclick="adjustPoints(1)" class="w-10 h-10 rounded-xl bg-slate-100">+</button>
+                                    </div>
+                                </div>
+
+                                <textarea id="quickReason" class="w-full p-3 rounded-xl bg-white" placeholder="اكتب مبرر..."></textarea>
+                                <button id="submitQuickBtn" onclick="submitQuickAction()" class="w-full bg-brand-600 text-white py-3 rounded-xl">تأكيد القرار</button>
+                            </div>
+                        </div>
+
+                        <!-- FORM: ACTIVITY -->
+                        <div id="form-activity" class="hidden space-y-3">
+                            <select id="actType" class="p-3 rounded-xl bg-white">
+                                <option value="meeting">اجتماع دوري</option>
+                                <option value="event">فعالية ميدانية</option>
+                                <option value="task">مهمة إدارية</option>
+                            </select>
+
+                            <div id="meetingStatusBox" class="p-3 bg-white rounded-xl">
+                                <p class="text-xs text-slate-400 font-black mb-2">حالة الحضور</p>
+                                <div class="grid grid-cols-3 gap-2">
+                                    <button id="ms-present" onclick="setMeetStatus('حاضر')" class="py-2 rounded-lg bg-brand-600 text-white">مواظب</button>
+                                    <button id="ms-late" onclick="setMeetStatus('متأخر')" class="py-2 rounded-lg">متأخر</button>
+                                    <button id="ms-absent" onclick="setMeetStatus('غائب')" class="py-2 rounded-lg">غائب</button>
+                                </div>
+                            </div>
+
+                            <input id="actDate" type="date" class="p-3 rounded-xl bg-white">
+                            <textarea id="actDesc" class="w-full p-3 rounded-xl bg-white" placeholder="وصف النشاط..."></textarea>
+                            <div class="flex items-center justify-between p-3 bg-white rounded-xl">
+                                <span class="text-xs text-slate-400 font-black">الدرجة الممنوحة</span>
+                                <input id="actScore" type="number" value="10" class="w-16 text-center font-black" min="0" max="50">
+                            </div>
+
+                            <button id="submitActBtn" onclick="submitActivity()" class="w-full bg-brand-600 text-white py-3 rounded-xl">حفظ النشاط</button>
+                        </div>
+
+                    </div>
+                </div>
             </div>
         </div>
 
@@ -164,11 +340,9 @@
             <h2 class="text-3xl font-black mb-6">أفضل 3 أعضاء</h2>
 
             <div class="flex gap-4 mb-6">
-                <select id="rankMonth" class="p-4 rounded-xl bg-slate-100 dark:bg-slate-800"></select>
-                <select id="rankYear" class="p-4 rounded-xl bg-slate-100 dark:bg-slate-800"></select>
-                <button onclick="onRankingTabOpen()" class="px-8 py-4 bg-brand-600 text-white rounded-2xl font-black">
-                    تحديث
-                </button>
+                <select id="rankMonth" class="p-3 rounded-xl bg-slate-100"></select>
+                <select id="rankYear" class="p-3 rounded-xl bg-slate-100"></select>
+                <button onclick="onRankingTabOpen()" class="px-8 py-3 bg-brand-600 text-white rounded-xl">تحديث</button>
             </div>
 
             <div id="topLoader" class="hidden text-center py-10">
@@ -210,11 +384,10 @@
 
     <!-- ============ JS FILES ============ -->
     <script src="js/utils.js"></script>
-    <script src="js/auth.js"></script>
     <script src="js/api.js"></script>
-    <script src="js/ui.js"></script>
+    <script src="js/auth.js"></script>
     <script src="js/charts.js"></script>
+    <script src="js/ui.js"></script>
 
 </body>
 </html>
-<!-- index.html placeholder -->
