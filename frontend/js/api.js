@@ -3,35 +3,47 @@
     Version 5.2 PRO (2026)
 ============================================================ */
 
-// رابط Google Apps Script Web App
+/*  ============================================
+    ضع هنا رابط الـ Web App من Google Apps Script
+    مثال:
+    const API_URL = "https://script.google.com/macros/s/XXXX/exec";
+================================================ */
 const API_URL = "https://script.google.com/macros/s/AKfycbyls10eMc1qIy6c0esdiNdZpGgrBFMWzff5IOskmYuTBo4krP-Hzt_8fZFdIGFb7zqSmA/exec";
 
+
 /* ------------------------------------------------------------
-    GLOBAL API REQUEST HANDLER
+    GENERAL FETCH WRAPPER — NO PRE-FLIGHT CORS
+    (مهم جداً: لا نستخدم application/json)
 ------------------------------------------------------------ */
 async function apiRequest(body = {}) {
+
     try {
-        // إضافة بيانات تسجيل الدخول تلقائياً لو المستخدم مسجّل
-        if (authState && authState.user) {
-            body._u = authState.user;      // username
-            body._t = authState.token;     // encoded token
-            body._s = authState.sig;       // signature
+        // Attach auth credentials automatically
+        if (window.authState && authState.user) {
+            body._u = authState.user;
+            body._t = authState.token;
+            body._s = authState.sig;
         }
 
         const res = await fetch(API_URL, {
             method: "POST",
-            // بدون headers → يجعلها simple request
-const res = await fetch(API_URL, {
-    method: "POST",
-    body: JSON.stringify(body)
-});
 
+            // ❗❗ مهم جداً — عدم تفعيل preflight
+            headers: {
+                "Content-Type": "text/plain;charset=UTF-8"
             },
+
             body: JSON.stringify(body)
         });
 
-        const data = await res.json();
-        return data;
+        // لو الرد مش JSON هنعرف من الخطأ
+        const text = await res.text();
+        try {
+            return JSON.parse(text);
+        } catch (e) {
+            console.error("API returned non-JSON:", text);
+            return { success: false, error: "الرد من الخادم غير صالح" };
+        }
 
     } catch (err) {
         console.error("API ERROR:", err);
@@ -39,8 +51,9 @@ const res = await fetch(API_URL, {
     }
 }
 
+
 /* ------------------------------------------------------------
-    SHORTCUT HELPERS
+    SHORTCUTS (اختصارات للعمليات)
 ------------------------------------------------------------ */
 function apiSearchMember(id) {
     return apiRequest({ action: "search", id });
@@ -70,5 +83,5 @@ function apiGetFullReport(uid) {
     return apiRequest({ action: "get_member_report", MemberUID: uid });
 }
 
-// مفتاح عام للاتصال بأي أمر
+// Manual API caller
 window.api = (payload) => apiRequest(payload);
