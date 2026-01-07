@@ -1,107 +1,105 @@
 /* ============================================================
-    YouthPower HR - Authentication
-    Version: 5.2 PRO (2026)
+    YouthPower HR - Authentication System
+    Version 5.2 PRO (2026)
 ============================================================ */
 
-let authState = {
-    user: localStorage.getItem("yp_user") || null,
-    role: localStorage.getItem("yp_role") || null,
-    token: localStorage.getItem("yp_token") || null,
-    sig: localStorage.getItem("yp_sig") || null
+window.authState = {
+    user: null,
+    role: null,
+    token: null,
+    sig: null
 };
 
 /* ------------------------------------------------------------
-    HANDLE LOGIN
+    SAVE SESSION
+------------------------------------------------------------ */
+function saveSession(data) {
+    authState.user = data.username;
+    authState.role = data.role;
+    authState.token = data.token;
+    authState.sig = data.signature;
+
+    localStorage.setItem("YP_AUTH", JSON.stringify(authState));
+}
+
+/* ------------------------------------------------------------
+    LOAD SESSION (Auto-login)
+------------------------------------------------------------ */
+function loadSession() {
+    const saved = localStorage.getItem("YP_AUTH");
+    if (!saved) return;
+
+    try {
+        const data = JSON.parse(saved);
+        authState = data;
+
+        document.getElementById("loginOverlay").classList.add("hidden");
+        showMainUI();
+    } catch (e) {
+        console.warn("Session load failed:", e);
+    }
+}
+loadSession();
+
+/* ------------------------------------------------------------
+    LOGIN
 ------------------------------------------------------------ */
 async function handleLogin() {
-    const username = document.getElementById("username").value.trim();
-    const password = document.getElementById("password").value.trim();
+    const u = document.getElementById("username").value.trim();
+    const p = document.getElementById("password").value.trim();
+
+    const status = document.getElementById("loginStatus");
     const btn = document.getElementById("loginBtn");
 
-    if (!username || !password)
-        return showToast("برجاء إدخال البيانات كاملة", "error");
+    if (!u || !p) {
+        status.innerText = "املأ جميع البيانات";
+        return;
+    }
 
     btn.disabled = true;
-    btn.innerHTML = `<i class="fas fa-spinner fa-spin"></i> جاري التحقق...`;
+    status.innerText = "جار التحقق...";
 
     const res = await apiRequest({
         action: "login",
-        username,
-        password
+        username: u,
+        password: p
     });
 
     btn.disabled = false;
-    btn.innerHTML = "تحقق من الهوية";
 
-    if (!res.success)
-        return showToast(res.error || "خطأ في تسجيل الدخول", "error");
+    if (!res.success) {
+        status.innerText = res.error;
+        return;
+    }
 
-    // Save session
-    localStorage.setItem("yp_user", res.data.username);
-    localStorage.setItem("yp_role", res.data.role);
-    localStorage.setItem("yp_token", res.data.token);
-    localStorage.setItem("yp_sig", res.data.signature);
+    // Save & start session
+    saveSession(res.data);
 
-    authState = {
-        user: res.data.username,
-        role: res.data.role,
-        token: res.data.token,
-        sig: res.data.signature
-    };
-
-    showToast("تم تسجيل الدخول بنجاح", "success");
-
-    setTimeout(() => {
-        showMainUI();
-    }, 500);
-}
-
-
-/* ------------------------------------------------------------
-    SHOW MAIN UI
------------------------------------------------------------- */
-function showMainUI() {
+    status.innerText = "";
     document.getElementById("loginOverlay").classList.add("hidden");
 
-    const mc = document.getElementById("mainContent");
-    mc.classList.remove("hidden");
-
-    setTimeout(() => mc.classList.add("opacity-100"), 30);
-
-    // Load default tab
-    switchTab("dashboard");
+    showMainUI();
 }
 
+/* ------------------------------------------------------------
+    SHOW MAIN CONTENT AFTER LOGIN
+------------------------------------------------------------ */
+function showMainUI() {
+    const main = document.getElementById("mainContent");
+    main.classList.remove("hidden");
+
+    setTimeout(() => {
+        main.style.opacity = "1";
+    }, 100);
+
+    // Default tab
+    switchTab("dashboard");
+}
 
 /* ------------------------------------------------------------
     LOGOUT
 ------------------------------------------------------------ */
 function logout() {
-    localStorage.clear();
+    localStorage.removeItem("YP_AUTH");
     location.reload();
 }
-
-
-/* ------------------------------------------------------------
-    SECURITY WRAPPER
-    Attaches _u, _t, _s to all API calls
------------------------------------------------------------- */
-function attachAuth(data) {
-    return {
-        ...data,
-        _u: authState.user,
-        _t: authState.token,
-        _s: authState.sig
-    };
-}
-
-
-/* ------------------------------------------------------------
-    CHECK IF SESSION EXISTS ON PAGE LOAD
------------------------------------------------------------- */
-window.addEventListener("load", () => {
-    if (authState.token) {
-        showMainUI();
-    }
-});
-// auth.js
