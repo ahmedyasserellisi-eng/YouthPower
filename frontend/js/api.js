@@ -7,7 +7,7 @@
     BACKEND URL (YOUR APPS SCRIPT DEPLOYMENT URL)
 ------------------------------------------------------------ */
 // ⚠️ IMPORTANT — ضع رابط Web App الفعلي هنا
-const API_URL = "YOUR_GOOGLE_APPS_SCRIPT_WEB_APP_URL";
+const API_URL = "https://script.google.com/macros/s/AKfycbyAIMKdc6ELTxsEOyJLkuEycRAFAyCNI3hUwmlRTxAfm5Tr-hyWLKrbQJ-EIXKRguP8oA/exec";
 
 
 /* ------------------------------------------------------------
