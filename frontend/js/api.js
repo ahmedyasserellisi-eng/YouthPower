@@ -22,11 +22,11 @@ async function apiRequest(body = {}) {
             body._s = authState.sig;
         }
 
-        const res = await fetch(API_URL, {
-            method: "POST",
-            contentType: "application/json",
-            body: JSON.stringify(body)
-        });
+const res = await fetch(API_URL, {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify(body)
+});
 
         return await res.json();
     } catch (err) {
